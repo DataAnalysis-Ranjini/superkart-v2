@@ -32,7 +32,7 @@ with st.form("prediction_form"):
         product_type = st.selectbox("Product Type", ["Dairy", "Soft Drinks", "Meat", "Fruits and Vegetables", "Household", "Baking Goods"])
         product_mrp = st.number_input("Product MRP", min_value=0.0, max_value=300.0, value=150.00, step=1.0)
         store_establishment_year = st.number_input("Store Establishment Year", min_value=1980, max_value=2026, value=2005, step=1)
-        store_id = st.text_input("Store ID", value="OUT049")
+        store_id = st.selectbox("Store ID", ["OUT049", "OUT018", "OUT027", "OUT013", "OUT046", "OUT035", "OUT019", "OUT045", "OUT017", "OUT010"])
 
     with col2:
         store_location_city_type = st.selectbox("Store Location City Type", ["Tier 1", "Tier 2", "Tier 3"])
@@ -46,22 +46,22 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Collect inputs matching the exact columns your model expects
+        # Construct DataFrame ensuring categorical features are explicit strings and numeric are floats/ints
         input_data = pd.DataFrame({
-            'Product_Weight': [product_weight],
-            'Product_Sugar_Content': [product_sugar_content],
-            'Product_Allocated_Area': [product_allocated_area],
-            'Product_Type': [product_type],
-            'Product_MRP': [product_mrp],
-            'Store_Establishment_Year': [store_establishment_year],
-            'Store_Location_City_Type': [store_location_city_type],
-            'Store_Type': [store_type],
-            'Store_Age': [store_age],
-            'Product_Category_Code': [product_category_code],
-            'Product_Type_Category': [product_type_category],
-            'Product_Category_Prefix': [product_category_prefix],
-            'Store_Id': [store_id],
-            'Store_Size': [store_size]
+            'Product_Weight': [float(product_weight)],
+            'Product_Sugar_Content': [str(product_sugar_content)],
+            'Product_Allocated_Area': [float(product_allocated_area)],
+            'Product_Type': [str(product_type)],
+            'Product_MRP': [float(product_mrp)],
+            'Store_Establishment_Year': [int(store_establishment_year)],
+            'Store_Location_City_Type': [str(store_location_city_type)],
+            'Store_Type': [str(store_type)],
+            'Store_Age': [int(store_age)],
+            'Product_Category_Code': [str(product_category_code)],
+            'Product_Type_Category': [int(product_type_category)],
+            'Product_Category_Prefix': [str(product_category_prefix)],
+            'Store_Id': [str(store_id)],
+            'Store_Size': [str(store_size)]
         })
 
         try:
