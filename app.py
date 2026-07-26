@@ -1,8 +1,16 @@
 import streamlit as st
 import pandas as pd
+import joblib
 from datetime import datetime
 
 st.title("SuperKart Sales Predictor")
+
+# Load your trained model (update the filename if yours is named differently)
+@st.cache_resource
+def load_model():
+    return joblib.load('superkart_random_forest_model_v1_0.joblib')
+
+model = load_model()
 
 # 1. Gather inputs from your Streamlit form widgets
 prod_weight = st.number_input("Product Weight", value=10.0)
@@ -47,7 +55,6 @@ input_df = pd.DataFrame([input_data])
 # 3. Predict button
 if st.button("Predict Sales"):
     try:
-        # Assuming your loaded model is named `model`
         prediction = model.predict(input_df)
         st.success(f"Predicted Sales Total: ${prediction[0]:,.2f}")
     except Exception as e:
