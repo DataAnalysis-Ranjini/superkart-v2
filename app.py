@@ -22,18 +22,21 @@ establishment_year = st.number_input("Store Establishment Year", min_value=1900,
 current_year = datetime.now().year
 store_age = current_year - int(establishment_year)
 
-# Categorical inputs using selectboxes (update options as per your dataset values)
+# Categorical inputs using selectboxes and text inputs
 sugar_content = st.selectbox("Product Sugar Content", ["Low Fat", "Regular", "Non-Edible"])
 product_type = st.selectbox("Product Type", ["Dairy", "Soft Drinks", "Meat", "Fruits and Vegetables", "Household", "Baking Goods"])
 store_size = st.selectbox("Store Size", ["Small", "Medium", "High"])
-city_type = st.selectbox("Store Location City Type", [ "Tier 1", "Tier 2", "Tier 3"])
+city_type = st.selectbox("Store Location City Type", ["Tier 1", "Tier 2", "Tier 3"])
 store_type = st.selectbox("Store Type", ["Supermarket Type1", "Supermarket Type2", "Supermarket Type3", "Grocery Store"])
 category_code = st.text_input("Product Category Code", value="DR")
 store_id = st.text_input("Store ID", value="OUT049")
 product_id = st.text_input("Product ID", value="FDA15")
 product_type_category = st.text_input("Product Type Category", value="1")
 
-# 2. Build the input DataFrame with ALL required features in the correct names
+# Automatically derive Product_Category_Prefix from the first 2 letters of Product_Id
+product_category_prefix = str(product_id)[:2].upper()
+
+# 2. Build the input DataFrame with ALL required features including Product_Category_Prefix
 input_data = {
     'Product_Weight': float(prod_weight),
     'Product_Allocated_Area': float(allocated_area),
@@ -47,7 +50,8 @@ input_data = {
     'Product_Category_Code': str(category_code),
     'Store_Id': str(store_id),
     'Product_Id': str(product_id),
-    'Product_Type_Category': str(product_type_category)
+    'Product_Type_Category': str(product_type_category),
+    'Product_Category_Prefix': str(product_category_prefix)
 }
 
 input_df = pd.DataFrame([input_data])
