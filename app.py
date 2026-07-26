@@ -1,85 +1,34 @@
-import streamlit as st
 import pandas as pd
-import joblib
-import numpy as np
+from datetime import datetime
 
-# Page configuration
-st.set_page_config(
-    page_title="Superkart Prediction App",
-    page_icon="🛒",
-    layout="wide"
-)
+# 1. Gather inputs from your Streamlit form
+prod_weight = float(...)
+allocated_area = float(...)
+mrp = float(...)
+establishment_year = int(...) # or from a selectbox/number_input
 
-# Load the trained model/pipeline
-@st.cache_resource
-def load_model():
-    return joblib.load("superkart_random_forest_model_v1_0.joblib")
+# Calculate Store_Age dynamically just like in training
+current_year = datetime.now().year
+store_age = current_year - establishment_year
 
-model = load_model()
+# 2. Build the input DataFrame with ALL required features in the correct names
+input_data = {
+    'Product_Weight': prod_weight,
+    'Product_Allocated_Area': allocated_area,
+    'Product_MRP': mrp,
+    'Store_Age': store_age,
+    'Product_Sugar_Content': str(...),
+    'Product_Type': str(...),
+    'Store_Size': str(...),
+    'Store_Location_City_Type': str(...),
+    'Store_Type': str(...),
+    'Product_Category_Code': str(...),
+    'Store_Id': str(...),
+    'Product_Id': str(...),
+    'Product_Type_Category': str(...) # or numeric depending on how you encoded it
+}
 
-st.title("🛒 Superkart Sales Prediction App (v2)")
-st.write("Enter the product and store details below to predict performance.")
+input_df = pd.DataFrame([input_data])
 
-# Create input form for single prediction
-with st.form("prediction_form"):
-    st.subheader("Single Product & Store Prediction Inputs")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        product_weight = st.number_input("Product Weight", min_value=0.0, max_value=50.0, value=12.50, step=0.1)
-        product_sugar_content = st.selectbox("Product Sugar Content", ["Low Fat", "Regular", "Non-Edible"])
-        product_allocated_area = st.number_input("Product Allocated Area", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
-        product_type = st.selectbox("Product Type", ["Dairy", "Soft Drinks", "Meat", "Fruits and Vegetables", "Household", "Baking Goods"])
-        product_mrp = st.number_input("Product MRP", min_value=0.0, max_value=300.0, value=150.00, step=1.0)
-        store_establishment_year = st.number_input("Store Establishment Year", min_value=1980, max_value=2026, value=2005, step=1)
-        store_id = st.selectbox("Store ID", ["OUT049", "OUT018", "OUT027", "OUT013", "OUT046", "OUT035", "OUT019", "OUT045", "OUT017", "OUT010"])
-
-    with col2:
-        store_location_city_type = st.selectbox("Store Location City Type", ["Tier 1", "Tier 2", "Tier 3"])
-        store_type = st.selectbox("Store Type", ["Supermarket Type1", "Supermarket Type2", "Supermarket Type3", "Grocery Store"])
-        store_size = st.selectbox("Store Size", ["Medium", "High", "Small"])
-        store_age = st.number_input("Store Age (Years)", min_value=0, max_value=50, value=15, step=1)
-        product_category_code = st.selectbox("Product Category Code", ["FD", "NC", "DR"])
-        product_type_category = st.selectbox("Product Type Category", [1, 2, 3])
-        product_category_prefix = st.selectbox("Product Category Prefix", ["FD", "NC", "DR"])
-
-    submitted = st.form_submit_button("Predict")
-
-    if submitted:
-        # Define the exact columns in the order your model expects
-        feature_columns = [
-            'Product_Weight', 'Product_Sugar_Content', 'Product_Allocated_Area',
-            'Product_Type', 'Product_MRP', 'Store_Establishment_Year',
-            'Store_Location_City_Type', 'Store_Type', 'Store_Age',
-            'Product_Category_Code', 'Product_Type_Category', 'Product_Category_Prefix',
-            'Store_Id', 'Store_Size'
-        ]
-
-        # Construct raw values matching columns precisely
-        row_values = [
-            float(product_weight),
-            str(product_sugar_content),
-            float(product_allocated_area),
-            str(product_type),
-            float(product_mrp),
-            int(store_establishment_year),
-            str(store_location_city_type),
-            str(store_type),
-            int(store_age),
-            str(product_category_code),
-            int(product_type_category),
-            str(product_category_prefix),
-            str(store_id),
-            str(store_size)
-        ]
-
-        # Create DataFrame with explicit standard python/numpy types
-        input_data = pd.DataFrame([row_values], columns=feature_columns)
-
-        try:
-            # Make prediction safely
-            prediction = model.predict(input_data)
-            st.success(f"### Predicted Output: {prediction[0]:,.2f}")
-        except Exception as e:
-            st.error(f"An error occurred during prediction: {e}")
+# 3. Predict
+prediction = model.predict(input_df)
