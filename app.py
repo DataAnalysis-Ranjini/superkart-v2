@@ -72,32 +72,63 @@ with tab1:
 # ==========================================
 with tab2:
     st.header("Upload CSV for Batch Predictions")
-    st.markdown("Your uploaded CSV must contain the required columns.")
+    st.markdown("Your uploaded CSV must contain the required base columns (e.g., `Store_Establishment_Year`, `Product_Id`, `Store_Id`, `Product_Category_Code`, etc.).")
     
     uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
     
     if uploaded_file is not None:
         try:
             batch_df = pd.read_csv(uploaded_file)
-            st.write("Uploaded Data Preview:", batch_df.head())
+            st.write("Uploaded Data Preview:", batch_df.head(10))
             
             if st.button("Run Batch Predictions"):
-                # Automatically engineer missing features if they aren't in the uploaded CSV
-                if 'Store_Age' not in batch_df.columns and 'Store_Establishment_Year' in batch_df.columns:
-                    batch_df['Store_Age'] = datetime.now().year - batch_df['Store_Establishment_Year']
-                
-                if 'Product_Category_Prefix' not in batch_df.columns and 'Product_Id' in batch_df.columns:
-                    batch_df['Product_Category_Prefix'] = batch_df['Product_Id'].astype(str).str[:2].str.upper()
+                # Clean column names in case of whitespace issues in CSV headers
+                batch_df.columns = batch_df.columns.str.strip()
 
-                # Run predictions for all rows
-                predictions = model.predict(batch_df)
+                # Automatically engineer or map missing features safely
+                if 'Store_Age' not in batch_df.columns:
+                    if 'Store_Establishment_Year' in batch_df.columns:
+                        batch_df['Store_Age'] = datetime.now().year - batch_df['Store_Establishment_Year']
+                    else:
+                        batch_df['Store_Age'] = 15  # Fallback median/default age if completely missing
+                
+                if 'Product_Category_Prefix' not in batch_df.columns:
+                    if 'Product_Id' in batch_df.columns:
+                        batch_df['Product_Category_Prefix'] = batch_df['Product_Id'].astype(str).str[:2].str.upper()
+                    else:
+                        batch_df['Product_Category_Prefix'] = 'DR'
+
+                # Ensure string conversion for identifier/categorical columns if present with variant names
+                if 'Store_Id' not in batch_df.columns:
+                    if 'Store_ID' in batch_df.columns:
+                        batch_df['Store_Id'] = batch_df['Store_ID']
+                    else:
+                        batch_df['Store_Id'] = 'OUT049'
+
+                if 'Product_Category_Code' not in batch_df.columns:
+                    batch_df['Product_Category_Code'] = 'DR'
+
+                # Reorder or select columns to match model expectation exactly, filling missing columns safely
+                expected_cols = [
+                    'Product_Weight', 'Product_Allocated_Area', 'Product_MRP', 'Store_Age',
+                    'Product_Sugar_Content', 'Product_Type', 'Store_Size', 'Store_Location_City_Type',
+                    'Store_Type', 'Product_Category_Code', 'Store_Id', 'Product_Id',
+                    'Product_Type_Category', 'Product_Category_Prefix'
+                ]
+
+                for col in expected_cols:
+                    if col not in batch_df.columns:
+                        batch_df[col] = 'Missing' if batch_df[col].dtype == 'object' else 0.0
+
+                # Run predictions for all rows using strictly aligned columns
+                predictions = model.predict(batch_df[expected_cols])
                 batch_df['Predicted_Sales'] = predictions
                 
                 st.success("Batch predictions completed successfully!")
                 
-                # Display predictions for the first 10 items
+                # Display predictions for the first 10 items explicitly using head(10)
                 st.subheader("Predictions for the first 10 items:")
-                st.dataframe(batch_df.head(10))
+                st.dataframe(batch_df.head(10), height=380)
                 
                 # Download button for the full results
                 csv_output = batch_df.to_csv(index=False).encode('utf-8')
