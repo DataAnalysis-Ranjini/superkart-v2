@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load the trained model
+# Load the trained model/pipeline
 @st.cache_resource
 def load_model():
     return joblib.load("superkart_random_forest_model_v1_0.joblib")
@@ -46,23 +46,40 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Construct DataFrame ensuring categorical features are explicit strings and numeric are floats/ints
+        # Build the DataFrame
         input_data = pd.DataFrame({
-            'Product_Weight': [float(product_weight)],
-            'Product_Sugar_Content': [str(product_sugar_content)],
-            'Product_Allocated_Area': [float(product_allocated_area)],
-            'Product_Type': [str(product_type)],
-            'Product_MRP': [float(product_mrp)],
-            'Store_Establishment_Year': [int(store_establishment_year)],
-            'Store_Location_City_Type': [str(store_location_city_type)],
-            'Store_Type': [str(store_type)],
-            'Store_Age': [int(store_age)],
-            'Product_Category_Code': [str(product_category_code)],
-            'Product_Type_Category': [int(product_type_category)],
-            'Product_Category_Prefix': [str(product_category_prefix)],
-            'Store_Id': [str(store_id)],
-            'Store_Size': [str(store_size)]
+            'Product_Weight': [product_weight],
+            'Product_Sugar_Content': [product_sugar_content],
+            'Product_Allocated_Area': [product_allocated_area],
+            'Product_Type': [product_type],
+            'Product_MRP': [product_mrp],
+            'Store_Establishment_Year': [store_establishment_year],
+            'Store_Location_City_Type': [store_location_city_type],
+            'Store_Type': [store_type],
+            'Store_Age': [store_age],
+            'Product_Category_Code': [product_category_code],
+            'Product_Type_Category': [product_type_category],
+            'Product_Category_Prefix': [product_category_prefix],
+            'Store_Id': [store_id],
+            'Store_Size': [store_size]
         })
+
+        # Explicitly enforce exact data types to prevent ufunc 'isnan' errors on pipelines
+        numeric_cols = [
+            'Product_Weight', 'Product_Allocated_Area', 'Product_MRP', 
+            'Store_Establishment_Year', 'Store_Age', 'Product_Type_Category'
+        ]
+        categorical_cols = [
+            'Product_Sugar_Content', 'Product_Type', 'Store_Location_City_Type', 
+            'Store_Type', 'Product_Category_Code', 'Product_Category_Prefix', 
+            'Store_Id', 'Store_Size'
+        ]
+
+        for col in numeric_cols:
+            input_data[col] = pd.to_numeric(input_data[col], errors='coerce').astype(float)
+            
+        for col in categorical_cols:
+            input_data[col] = input_data[col].astype(str)
 
         try:
             # Make prediction
