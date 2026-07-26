@@ -12,7 +12,6 @@ st.set_page_config(
 # Load the trained model
 @st.cache_resource
 def load_model():
-    # Replace with your actual joblib file name if it differs slightly
     return joblib.load("superkart_random_forest_model_v1_0.joblib")
 
 model = load_model()
@@ -22,7 +21,7 @@ st.write("Enter the product and store details below to predict performance.")
 
 # Create input form for single prediction
 with st.form("prediction_form"):
-    st.subheader("Single Product Prediction Inputs")
+    st.subheader("Single Product & Store Prediction Inputs")
     
     col1, col2 = st.columns(2)
     
@@ -33,10 +32,12 @@ with st.form("prediction_form"):
         product_type = st.selectbox("Product Type", ["Dairy", "Soft Drinks", "Meat", "Fruits and Vegetables", "Household", "Baking Goods"])
         product_mrp = st.number_input("Product MRP", min_value=0.0, max_value=300.0, value=150.00, step=1.0)
         store_establishment_year = st.number_input("Store Establishment Year", min_value=1980, max_value=2026, value=2005, step=1)
+        store_id = st.text_input("Store ID", value="OUT049")
 
     with col2:
         store_location_city_type = st.selectbox("Store Location City Type", ["Tier 1", "Tier 2", "Tier 3"])
         store_type = st.selectbox("Store Type", ["Supermarket Type1", "Supermarket Type2", "Supermarket Type3", "Grocery Store"])
+        store_size = st.selectbox("Store Size", ["Medium", "High", "Small"])
         store_age = st.number_input("Store Age (Years)", min_value=0, max_value=50, value=15, step=1)
         product_category_code = st.selectbox("Product Category Code", ["FD", "NC", "DR"])
         product_type_category = st.selectbox("Product Type Category", [1, 2, 3])
@@ -45,7 +46,7 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Collect inputs into a DataFrame matching your training data structure
+        # Collect inputs matching the exact columns your model expects
         input_data = pd.DataFrame({
             'Product_Weight': [product_weight],
             'Product_Sugar_Content': [product_sugar_content],
@@ -58,7 +59,9 @@ with st.form("prediction_form"):
             'Store_Age': [store_age],
             'Product_Category_Code': [product_category_code],
             'Product_Type_Category': [product_type_category],
-            'Product_Category_Prefix': [product_category_prefix]
+            'Product_Category_Prefix': [product_category_prefix],
+            'Store_Id': [store_id],
+            'Store_Size': [store_size]
         })
 
         try:
