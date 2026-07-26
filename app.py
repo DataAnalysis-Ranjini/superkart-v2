@@ -72,7 +72,7 @@ with tab1:
 # ==========================================
 with tab2:
     st.header("Upload CSV for Batch Predictions")
-    st.markdown("Your uploaded CSV must contain the required base columns (e.g., `Store_Establishment_Year`, `Product_Id`, `Store_Id`, `Product_Category_Code`, etc.).")
+    st.markdown("Your uploaded CSV must contain the required base columns.")
     
     uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
     
@@ -82,33 +82,47 @@ with tab2:
             st.write("Uploaded Data Preview:", batch_df.head(10))
             
             if st.button("Run Batch Predictions"):
-                # Clean column names in case of whitespace issues in CSV headers
+                # Clean column names (strip whitespace or handle lowercase/uppercase variants)
                 batch_df.columns = batch_df.columns.str.strip()
 
-                # Automatically engineer or map missing features safely
+                # Map alternative column names if they differ slightly in the uploaded CSV
+                column_mapping = {
+                    'Store_Establishment_Year': ['Store_Establishment_Year', 'Establishment_Year', 'Year'],
+                    'Product_Weight': ['Product_Weight', 'Weight', 'Item_Weight'],
+                    'Product_Allocated_Area': ['Product_Allocated_Area', 'Visibility', 'Item_Visibility', 'Allocated_Area'],
+                    'Product_MRP': ['Product_MRP', 'MRP', 'Item_MRP'],
+                    'Product_Sugar_Content': ['Product_Sugar_Content', 'Sugar_Content', 'Item_Fat_Content'],
+                    'Product_Type': ['Product_Type', 'Item_Type'],
+                    'Store_Size': ['Store_Size', 'Outlet_Size'],
+                    'Store_Location_City_Type': ['Store_Location_City_Type', 'Outlet_Location_Type', 'City_Type'],
+                    'Store_Type': ['Store_Type', 'Outlet_Type'],
+                    'Product_Category_Code': ['Product_Category_Code', 'Category_Code'],
+                    'Store_Id': ['Store_Id', 'Store_ID', 'Outlet_Identifier'],
+                    'Product_Id': ['Product_Id', 'Product_ID', 'Item_Identifier'],
+                    'Product_Type_Category': ['Product_Type_Category', 'Type_Category']
+                }
+
+                for target_col, variants in column_mapping.items():
+                    if target_col not in batch_df.columns:
+                        for v in variants:
+                            if v in batch_df.columns:
+                                batch_df[target_col] = batch_df[v]
+                                break
+
+                # Automatically engineer missing features safely
                 if 'Store_Age' not in batch_df.columns:
                     if 'Store_Establishment_Year' in batch_df.columns:
-                        batch_df['Store_Age'] = datetime.now().year - batch_df['Store_Establishment_Year']
+                        batch_df['Store_Age'] = datetime.now().year - pd.to_numeric(batch_df['Store_Establishment_Year'], errors='coerce').fillna(2010)
                     else:
-                        batch_df['Store_Age'] = 15  # Fallback median/default age if completely missing
-                
+                        batch_df['Store_Age'] = 15
+
                 if 'Product_Category_Prefix' not in batch_df.columns:
                     if 'Product_Id' in batch_df.columns:
                         batch_df['Product_Category_Prefix'] = batch_df['Product_Id'].astype(str).str[:2].str.upper()
                     else:
                         batch_df['Product_Category_Prefix'] = 'DR'
 
-                # Ensure string conversion for identifier/categorical columns if present with variant names
-                if 'Store_Id' not in batch_df.columns:
-                    if 'Store_ID' in batch_df.columns:
-                        batch_df['Store_Id'] = batch_df['Store_ID']
-                    else:
-                        batch_df['Store_Id'] = 'OUT049'
-
-                if 'Product_Category_Code' not in batch_df.columns:
-                    batch_df['Product_Category_Code'] = 'DR'
-
-                # Reorder or select columns to match model expectation exactly, filling missing columns safely
+                # Explicit expected features list required by the model
                 expected_cols = [
                     'Product_Weight', 'Product_Allocated_Area', 'Product_MRP', 'Store_Age',
                     'Product_Sugar_Content', 'Product_Type', 'Store_Size', 'Store_Location_City_Type',
@@ -116,9 +130,13 @@ with tab2:
                     'Product_Type_Category', 'Product_Category_Prefix'
                 ]
 
+                # Ensure all expected columns exist, filling missing ones with default safe placeholders
                 for col in expected_cols:
                     if col not in batch_df.columns:
-                        batch_df[col] = 'Missing' if batch_df[col].dtype == 'object' else 0.0
+                        if col in ['Product_Weight', 'Product_Allocated_Area', 'Product_MRP', 'Store_Age']:
+                            batch_df[col] = 0.0
+                        else:
+                            batch_df[col] = 'Unknown'
 
                 # Run predictions for all rows using strictly aligned columns
                 predictions = model.predict(batch_df[expected_cols])
