@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import numpy as np
 
 # Page configuration
 st.set_page_config(
@@ -46,26 +47,38 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Build DataFrame with explicit data types
-        input_data = pd.DataFrame({
-            'Product_Weight': pd.Series([product_weight], dtype='float64'),
-            'Product_Sugar_Content': pd.Series([str(product_sugar_content)], dtype='object'),
-            'Product_Allocated_Area': pd.Series([product_allocated_area], dtype='float64'),
-            'Product_Type': pd.Series([str(product_type)], dtype='object'),
-            'Product_MRP': pd.Series([product_mrp], dtype='float64'),
-            'Store_Establishment_Year': pd.Series([int(store_establishment_year)], dtype='int64'),
-            'Store_Location_City_Type': pd.Series([str(store_location_city_type)], dtype='object'),
-            'Store_Type': pd.Series([str(store_type)], dtype='object'),
-            'Store_Age': pd.Series([int(store_age)], dtype='int64'),
-            'Product_Category_Code': pd.Series([str(product_category_code)], dtype='object'),
-            'Product_Type_Category': pd.Series([int(product_type_category)], dtype='int64'),
-            'Product_Category_Prefix': pd.Series([str(product_category_prefix)], dtype='object'),
-            'Store_Id': pd.Series([str(store_id)], dtype='object'),
-            'Store_Size': pd.Series([str(store_size)], dtype='object')
-        })
+        # Define the exact columns in the order your model expects
+        feature_columns = [
+            'Product_Weight', 'Product_Sugar_Content', 'Product_Allocated_Area',
+            'Product_Type', 'Product_MRP', 'Store_Establishment_Year',
+            'Store_Location_City_Type', 'Store_Type', 'Store_Age',
+            'Product_Category_Code', 'Product_Type_Category', 'Product_Category_Prefix',
+            'Store_Id', 'Store_Size'
+        ]
+
+        # Construct raw values matching columns precisely
+        row_values = [
+            float(product_weight),
+            str(product_sugar_content),
+            float(product_allocated_area),
+            str(product_type),
+            float(product_mrp),
+            int(store_establishment_year),
+            str(store_location_city_type),
+            str(store_type),
+            int(store_age),
+            str(product_category_code),
+            int(product_type_category),
+            str(product_category_prefix),
+            str(store_id),
+            str(store_size)
+        ]
+
+        # Create DataFrame with explicit standard python/numpy types
+        input_data = pd.DataFrame([row_values], columns=feature_columns)
 
         try:
-            # Make prediction
+            # Make prediction safely
             prediction = model.predict(input_data)
             st.success(f"### Predicted Output: {prediction[0]:,.2f}")
         except Exception as e:
