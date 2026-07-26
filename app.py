@@ -46,40 +46,23 @@ with st.form("prediction_form"):
     submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Build the DataFrame
+        # Build DataFrame with explicit data types
         input_data = pd.DataFrame({
-            'Product_Weight': [product_weight],
-            'Product_Sugar_Content': [product_sugar_content],
-            'Product_Allocated_Area': [product_allocated_area],
-            'Product_Type': [product_type],
-            'Product_MRP': [product_mrp],
-            'Store_Establishment_Year': [store_establishment_year],
-            'Store_Location_City_Type': [store_location_city_type],
-            'Store_Type': [store_type],
-            'Store_Age': [store_age],
-            'Product_Category_Code': [product_category_code],
-            'Product_Type_Category': [product_type_category],
-            'Product_Category_Prefix': [product_category_prefix],
-            'Store_Id': [store_id],
-            'Store_Size': [store_size]
+            'Product_Weight': pd.Series([product_weight], dtype='float64'),
+            'Product_Sugar_Content': pd.Series([str(product_sugar_content)], dtype='object'),
+            'Product_Allocated_Area': pd.Series([product_allocated_area], dtype='float64'),
+            'Product_Type': pd.Series([str(product_type)], dtype='object'),
+            'Product_MRP': pd.Series([product_mrp], dtype='float64'),
+            'Store_Establishment_Year': pd.Series([int(store_establishment_year)], dtype='int64'),
+            'Store_Location_City_Type': pd.Series([str(store_location_city_type)], dtype='object'),
+            'Store_Type': pd.Series([str(store_type)], dtype='object'),
+            'Store_Age': pd.Series([int(store_age)], dtype='int64'),
+            'Product_Category_Code': pd.Series([str(product_category_code)], dtype='object'),
+            'Product_Type_Category': pd.Series([int(product_type_category)], dtype='int64'),
+            'Product_Category_Prefix': pd.Series([str(product_category_prefix)], dtype='object'),
+            'Store_Id': pd.Series([str(store_id)], dtype='object'),
+            'Store_Size': pd.Series([str(store_size)], dtype='object')
         })
-
-        # Explicitly enforce exact data types to prevent ufunc 'isnan' errors on pipelines
-        numeric_cols = [
-            'Product_Weight', 'Product_Allocated_Area', 'Product_MRP', 
-            'Store_Establishment_Year', 'Store_Age', 'Product_Type_Category'
-        ]
-        categorical_cols = [
-            'Product_Sugar_Content', 'Product_Type', 'Store_Location_City_Type', 
-            'Store_Type', 'Product_Category_Code', 'Product_Category_Prefix', 
-            'Store_Id', 'Store_Size'
-        ]
-
-        for col in numeric_cols:
-            input_data[col] = pd.to_numeric(input_data[col], errors='coerce').astype(float)
-            
-        for col in categorical_cols:
-            input_data[col] = input_data[col].astype(str)
 
         try:
             # Make prediction
